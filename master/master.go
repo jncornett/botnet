@@ -33,10 +33,13 @@ func main() {
 			defer conn.Close()
 			client := rpc.NewClient(conn)
 			var reply bool
-			log.Print("calling Service.SayHello() on", conn.RemoteAddr())
-			err = client.Call("Service.SayHello", false, &reply)
-			if err != nil {
-				log.Print(err)
+			{
+				// Issue commands here
+				log.Print("calling Service.SayHello() on", conn.RemoteAddr())
+				err = client.Call("Service.SayHello", false, &reply)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 		}()
 	}
