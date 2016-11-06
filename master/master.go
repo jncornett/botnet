@@ -3,9 +3,11 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net"
-	"net/rpc"
+
+	"github.com/jncornett/botnet"
 )
 
 const (
@@ -22,25 +24,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-		log.Print("accepted connection from", conn.RemoteAddr())
-		go func() {
-			defer conn.Close()
-			client := rpc.NewClient(conn)
+	master := botnet.NewMaster()
+	master.Serve(
+		func() (io.ReadWriteCloser, error) { return ln.Accept() },
+		func(client botnet.Client) {
 			var reply bool
-			{
-				// Issue commands here
-				log.Print("calling Service.SayHello() on", conn.RemoteAddr())
-				err = client.Call("Service.SayHello", false, &reply)
-				if err != nil {
-					log.Print(err)
-				}
+			err = client.Call("Service.SayHello", false, &reply)
+			if err != nil {
+				log.Print(err)
 			}
-		}()
-	}
+		},
+	)
 }
